@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbit Escape Game V2</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        #startButton {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <br>
+    <button id="startButton">Start Game</button>
+    <p>Use arrow keys to move. Avoid the tigers, collect food, and reach home!</p>
+    <p>Score: <span id="score">0</span> | Level: <span id="level">1</span></p>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const startButton = document.getElementById('startButton');
+
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 30,
+            speed: 5,
+            dx: 0,
+            dy: 0
+        };
+
+        const tigerImage = new Image();
+        tigerImage.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZmZhNTAwIiBkPSJNNDU2LjcgMEg1NS4zQzI0LjggMCAwIDI0LjggMCA1NS4zdjQwMS4zQzAgNDg3LjIgMjQuOCA1MTIgNTUuMyA1MTJoNDAxLjNjMzAuNSAwIDU1LjMtMjQuOCA1NS4zLTU1LjNWNTUuM0M1MTIgMjQuOCA0ODcuMiAwIDQ1Ni43IDB6Ii8+PHBhdGggZmlsbD0iI2ZmODIwMCIgZD0iTTI1NiA1MTJWMEg1NS4zQzI0LjggMCAwIDI0LjggMCA1NS4zdjQwMS4zQzAgNDg3LjIgMjQuOCA1MTIgNTUuMyA1MTJIMjU2eiIvPjxwYXRoIGZpbGw9IiMwMDAiIGQ9Ik0yNzUuNyAyMTEuNGMtOS45LTI4LjEtMjYuNy0xOS4xLTQ0LjYtNS40LTE4IDEzLjctNDMuNSAyMS4xLTQ1LjUtMTEuNy0xLjEtMTcgNC4xLTI3IDIwLjctMjQuNyAxNS4xIDIuMSAyOC43LTE5LjQgNDYuOS0xMi41IDE4LjQgNi45IDMwLjggNDMuMyA0OC41IDQ5LjUgMTcuNyA2LjMgMzcuOC0xMC40IDU2LjEtMS42IDE4LjMgOC43IDMwLjggMzYgNTUuNyAzNC40IDI0LjktMS42IDQxLTMzLjQgNTAuNS02NS4xLTEzLjItNC42LTI1LjktOS4yLTM3LjktMTMuNS0yNi45LTkuNy0xMS4xIDExLjMtMjcuNCAzMC43LTE5LjcgMjMuNC01Ni44IDEuNi01MC4yLTI2LjlzMjUuNC0zMC4yIDQ4LjEtNDQuNWMyMi43LTE0LjMgMzcuNS0xNy44IDQ3LjEtMTYuOCAxNi42IDIuOSAzMy4zIDUuOCA0OS45IDguNyAxLjYtMTMuNSAyLjQtMjcuMyAyLjQtNDEuMkM0OTYgMzYuOCA0NTkuMiAwIDQxMy45IDBIMjU2djIxMS40aC0xOS43Yy0xMi45IDAtMTkuMSAxNS42LTkuOSAyNC43TDI1NiAyNjZ2LjFsMTQuOSAxNC45YzkuMiA5LjIgMjQuNyAyLjkgMjQuNy05LjlWMjExLjR6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTMyMS42IDM1MmMtMTYuNiAxNy44LTQwLjIgMjktNjYuNCAyOS0yNi4yIDAtNDkuOC0xMS4yLTY2LjQtMjktMTguNiAxMi40LTM0LjUgMjguOS00Ny4yIDQ4LjMgMjkuMiAzMi4xIDcxLjIgNTIuMyAxMTggNTIuMyA0Ni45IDAgODguOS0yMC4yIDExOC4xLTUyLjMtMTIuOC0xOS40LTI4LjctMzUuOS00Ny4yLTQ4LjN6Ii8+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTI1NS4yIDM4MWMtMjYuMiAwLTQ5LjgtMTEuMi02Ni40LTI5LTE4LjYgMTIuNC0zNC41IDI4LjktNDcuMiA0OC4zIDI5LjIgMzIuMSA3MS4yIDUyLjMgMTE4IDUyLjMuMSAwIC4yLS4xLjMtLjFWMzgxaC00Ljd6Ii8+PC9zdmc+';
+
+        const rabbitImage = new Image();
+        rabbitImage.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZjRjNGUwIiBkPSJNNDk2IDM1MmMwIDcwLjctNTcuMyAxMjgtMTI4IDEyOEgxNDRjLTcwLjcgMC0xMjgtNTcuMy0xMjgtMTI4VjE2MEMxNiA4OS4zIDczLjMgMzIgMTQ0IDMyaDIyNGM3MC43IDAgMTI4IDU3LjMgMTI4IDEyOHYxOTJ6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTQzMiAzNTJjMCA1My00MyA5Ni05NiA5NkgxNzZjLTUzIDAtOTYtNDMtOTYtOTZWMTYwYzAtNTMgNDMtOTYgOTYtOTZoMTYwYzUzIDAgOTYgNDMgOTYgOTZ2MTkyeiIvPjxwYXRoIGZpbGw9IiNmNGM0ZTAiIGQ9Ik0zODQgMjg4YzAgMTcuNy0xNC4zIDMyLTMyIDMySDIyNGMtMTcuNyAwLTMyLTE0LjMtMzItMzJWMTkyYzAtMTcuNyAxNC4zLTMyIDMyLTMyaDE2MGMxNy43IDAgMzIgMTQuMyAzMiAzMnY5NnoiLz48Y2lyY2xlIGZpbGw9IiMwMDAiIGN4PSIyNDAiIGN5PSIxOTIiIHI9IjE2Ii8+PGNpcmNsZSBmaWxsPSIjMDAwIiBjeD0iMzM2IiBjeT0iMTkyIiByPSIxNiIvPjxwYXRoIGQ9Ik0yODggMjU2YzAtOC44LTcuMi0xNi0xNi0xNnMtMTYgNy4yLTE2IDE2IDcuMiAxNiAxNiAxNiAxNi03LjIgMTYtMTZ6Ii8+PC9zdmc+';
+
+        const homeImage = new Image();
+        homeImage.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjODk1YTNjIiBkPSJNNDk2IDQ0OGgtNDgwdi0yNTZsODAtODBjMTA2LjctMTA2LjcgMjEzLjMtMjEzLjMgMzIwLTMyMGw4MCA4MHYyNTZoLTQ4MHoiLz48cGF0aCBmaWxsPSIjYzk4YjVhIiBkPSJNNDk2IDE5MmwtMjQwLTI0MC0yNDAgMjQwdjI1Nmg0ODB2LTI1NnoiLz48cGF0aCBmaWxsPSIjZTZlNmU2IiBkPSJNMzUyIDM1MmgtMTkydi0xOTJoMTkydjE5MnoiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMzUyIDE2MGgtMTkydjE5MmgxOTJ2LTE5MnoiLz48cGF0aCBmaWxsPSIjODk1YTNjIiBkPSJNMjg4IDI1NmgtNjR2LTY0aDY0djY0eiIvPjwvc3ZnPg==';
+
+        let tigers = [];
+        const jails = [
+            { x: 100, y: 200, width: 40, height: 40 },
+            { x: 300, y: 200, width: 40, height: 40 }
+        ];
+        const home = { x: canvas.width - 50, y: 50, size: 50 };
+        let food = [];
+
+        let score = 0;
+        let level = 1;
+        let gameLoop;
+        let gameStarted = false;
+
+        function drawPlayer() {
+            ctx.drawImage(rabbitImage, player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
+        }
+
+        function drawTigers() {
+            tigers.forEach(tiger => {
+                if (!tiger.jailed) {
+                    ctx.drawImage(tigerImage, tiger.x - tiger.size / 2, tiger.y - tiger.size / 2, tiger.size, tiger.size);
+                }
+            });
+        }
+
+        function drawJails() {
+            jails.forEach(jail => {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(jail.x, jail.y, jail.width, jail.height);
+            });
+        }
+
+        function drawHome() {
+            ctx.drawImage(homeImage, home.x, home.y, home.size, home.size);
+        }
+
+        function drawFood() {
+            food.forEach(item => {
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, item.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'green';
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        function moveTigers() {
+            tigers.forEach(tiger => {
+                if (!tiger.jailed) {
+                    const dx = player.x - tiger.x;
+                    const dy = player.y - tiger.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    tiger.x += (dx / distance) * tiger.speed;
+                    tiger.y += (dy / distance) * tiger.speed;
+
+                    // Check for jail collision
+                    jails.forEach(jail => {
+                        if (tiger.x > jail.x && tiger.x < jail.x + jail.width &&
+                            tiger.y > jail.y && tiger.y < jail.y + jail.height) {
+                            tiger.jailed = true;
+                        }
+                    });
+                }
+            });
+        }
+
+        function movePlayer() {
+            player.x = Math.max(player.size / 2, Math.min(player.x + player.dx, canvas.width - player.size / 2));
+            player.y = Math.max(player.size / 2, Math.min(player.y + player.dy, canvas.height - player.size / 2));
+        }
+
+        function checkCollisions() {
+            // Check tiger collision
+            if (tigers.some(tiger => !tiger.jailed && Math.hypot(tiger.x - player.x, tiger.y - player.y) < (player.size + tiger.size) / 2)) {
+                return 'lose';
+            }
+
+            // Check food collision
+            food = food.filter(item => {
+                if (Math.hypot(item.x - player.x, item.y - player.y) < (player.size + item.size) / 2) {
+                    score += 10;
+                    return false;
+                }
+                return true;
+            });
+
+            // Check home collision
+            if (player.x > home.x && player.x < home.x + home.size &&
+                player.y > home.y && player.y < home.y + home.size) {return 'win';
+                }
+        
+                return null;
+            }
+        
+            function updateGame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                movePlayer();
+                moveTigers();
+                drawJails();
+                drawHome();
+                drawFood();
+                drawPlayer();
+                drawTigers();
+        
+                const result = checkCollisions();
+                if (result === 'lose') {
+                    endGame(false);
+                } else if (result === 'win') {
+                    endGame(true);
+                }
+        
+                scoreElement.textContent = score;
+            }
+        
+            function endGame(won) {
+                clearInterval(gameLoop);
+                gameStarted = false;
+                startButton.disabled = false;
+                if (won) {
+                    level++;
+                    startButton.textContent = 'Next Level';
+                    alert(`You won! Level ${level-1} completed. Your score: ${score}`);
+                } else {
+                    startButton.textContent = 'Try Again';
+                    alert(`Game Over! Your final score: ${score}`);
+                }
+            }
+        
+            function spawnFood() {
+                for (let i = 0; i < 5; i++) {
+                    food.push({
+                        x: Math.random() * (canvas.width - 20) + 10,
+                        y: Math.random() * (canvas.height - 20) + 10,
+                        size: 5
+                    });
+                }
+            }
+        
+            function startGame() {
+                if (gameStarted) return;
+        
+                gameStarted = true;
+                player.x = canvas.width / 2;
+                player.y = canvas.height / 2;
+                player.dx = 0;
+                player.dy = 0;
+        
+                tigers = [];
+                for (let i = 0; i < level + 1; i++) {
+                    tigers.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: 40,
+                        speed: 2,
+                        jailed: false
+                    });
+                }
+        
+                food = [];
+                spawnFood();
+        
+                startButton.disabled = true;
+                gameLoop = setInterval(updateGame, 1000 / 60); // 60 FPS
+            }
+        
+            document.addEventListener('keydown', (e) => {
+                if (!gameStarted) return;
+                switch (e.key) {
+                    case 'ArrowUp':
+                        player.dy = -player.speed;
+                        break;
+                    case 'ArrowDown':
+                        player.dy = player.speed;
+                        break;
+                    case 'ArrowLeft':
+                        player.dx = -player.speed;
+                        break;
+                    case 'ArrowRight':
+                        player.dx = player.speed;
+                        break;
+                }
+            });
+        
+            document.addEventListener('keyup', (e) => {
+                if (!gameStarted) return;
+                switch (e.key) {
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                        player.dy = 0;
+                        break;
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        player.dx = 0;
+                        break;
+                }
+            });
+        
+            startButton.addEventListener('click', startGame);
+        
+            // Initial draw
+            drawJails();
+            drawHome();
+            drawPlayer();
+        </script>
