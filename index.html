@@ -19,7 +19,7 @@
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     <br>
     <button id="startButton">Start Game</button>
-    <p>Use arrow keys to move. Avoid the tigers, collect food, and reach home!</p>
+    <p>Use arrow keys to move your bunny. Avoid the tigers, collect food, and reach home in the top right! If the tigers run into the jails they are stuck!</p>
     <p>Score: <span id="score">0</span> | Level: <span id="level">1</span></p>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -199,7 +199,7 @@
                         x: Math.random() * canvas.width,
                         y: Math.random() * canvas.height,
                         size: 40,
-                        speed: 2,
+                        speed: 1,
                         jailed: false
                     });
                 }
